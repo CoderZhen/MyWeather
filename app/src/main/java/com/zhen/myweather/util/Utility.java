@@ -1,11 +1,15 @@
 package com.zhen.myweather.util;
 
+import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.view.TextureView;
+import android.view.View;
 
+import com.google.gson.Gson;
 import com.zhen.myweather.db.City;
 import com.zhen.myweather.db.County;
 import com.zhen.myweather.db.Province;
+import com.zhen.myweather.gson.Weather;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -66,6 +70,7 @@ public class Utility {
                     county.setCityId(cityId);
                     county.setCountyId(jsonObject.getInt("id"));
                     county.setCountyName(jsonObject.getString("name"));
+                    county.setWeatherId(jsonObject.getString("weather_id"));
                     county.save();
                 }
                 return true;
@@ -74,5 +79,18 @@ public class Utility {
             }
         }
         return false;
+    }
+
+    public static Weather handlerWeatherResponse(String response) {
+        if (!TextUtils.isEmpty(response)) {
+            try {
+                JSONObject heWeather = new JSONObject(response).getJSONArray("HeWeather").getJSONObject(0);
+                String weather = heWeather.toString();
+                return new Gson().fromJson(weather,Weather.class);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
     }
 }
