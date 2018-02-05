@@ -1,6 +1,7 @@
 package com.zhen.myweather;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -23,8 +24,10 @@ import android.widget.Toast;
 import com.kymjs.rxvolley.RxVolley;
 import com.kymjs.rxvolley.client.HttpCallback;
 import com.kymjs.rxvolley.http.VolleyError;
+import com.squareup.picasso.Picasso;
 import com.zhen.myweather.gson.Forecast;
 import com.zhen.myweather.gson.Weather;
+import com.zhen.myweather.service.AutoUpdateService;
 import com.zhen.myweather.util.Utility;
 
 public class WeatherActivity extends AppCompatActivity {
@@ -54,10 +57,11 @@ public class WeatherActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_weather);
         initView();
+        loadBindPic();
         //系统状态栏透明
         if (Build.VERSION.SDK_INT >= 21) {
             View decorView = getWindow().getDecorView();
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
             getWindow().setStatusBarColor(Color.TRANSPARENT);
         }
 
@@ -117,6 +121,8 @@ public class WeatherActivity extends AppCompatActivity {
             @Override
             public void onFailure(VolleyError error) {
                 Toast.makeText(WeatherActivity.this, "请求数据失败", Toast.LENGTH_SHORT).show();
+                stopProgressDialog();
+                swipeRefreshLayout.setRefreshing(false);
             }
         });
     }
@@ -155,6 +161,27 @@ public class WeatherActivity extends AppCompatActivity {
 
         scrollView.setVisibility(View.VISIBLE);
         swipeRefreshLayout.setRefreshing(false);
+
+        Intent intent = new Intent(this, AutoUpdateService.class);
+        startService(intent);
+    }
+
+    private void loadBindPic() {
+        String bingUrl = "http://guolin.tech/api/bing_pic";
+        RxVolley.get(bingUrl, new HttpCallback() {
+            @Override
+            public void onSuccess(final String t) {
+                final SharedPreferences.Editor spfe = getSharedPreferences("weatherbg",MODE_PRIVATE).edit();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        spfe.putString("bingBg",t);
+                        spfe.apply();
+                        Picasso.with(WeatherActivity.this).load(t).into(weatherBg);
+                    }
+                });
+            }
+        });
     }
 
     private void initView() {
